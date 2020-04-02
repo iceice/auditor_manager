@@ -26,4 +26,8 @@ urlpatterns = [
         r'delete$',
         views.delete_student,
     ),
+    url(
+        r'deletebatch$',
+        views.delete_students,
+    ),
 ]

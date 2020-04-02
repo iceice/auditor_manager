@@ -58,7 +58,7 @@
               </el-row>
             </el-form>
             <!-- 表格 -->
-            <el-table :data="pageStudents" border style="width: 100%" size="mini">
+            <el-table :data="pageStudents" border style="width: 100%" size="mini" @selection-change="handleSelectionChange">>
               <el-table-column type="selection"> </el-table-column>
               <el-table-column type="index" label="序号" width="50" align="center"> </el-table-column>
               <el-table-column prop="student_id" label="学号" width="90" align="center"> </el-table-column>
@@ -81,7 +81,7 @@
             <!-- 分页 -->
             <el-row style="margin-top: 20px">
               <el-col :span="8" style="text-align: left">
-                <el-button type="primary" icon="el-icon-delete" size="mini">批量删除</el-button>
+                <el-button type="primary" icon="el-icon-delete" size="mini" @click="deleteStudents">批量删除</el-button>
               </el-col>
               <el-col :span="16" style="text-align: right">
                 <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
@@ -175,6 +175,7 @@ export default {
       pageStudents: [], // 当前页的学生信息
       baseURL: 'http://127.0.0.1:8000/api/',
       inputstr: '',
+      selectStudents: [],
       total: 100, // 数据的总行数
       currentpage: 1, // 当前所在的页
       pagesize: 10,
@@ -195,7 +196,7 @@ export default {
       rules: {
         student_id: [
           { required: true, message: '学号不能为空', trigger: 'blur' },
-          { pattern: /^[1][8][0][1][2][1][3]\d{3}$/, message: '学号必须是1801213xxx', trigger: 'blur' },
+          { pattern: /^[9][5]\d{3}$/, message: '学号必须是95xxx', trigger: 'blur' },
           { validator: checkStudentId, trigger: 'blur' }
         ],
         name: [
@@ -269,16 +270,6 @@ export default {
         if (this.pageStudents.length === this.pagesize) break
       }
       console.log(this.pageStudents)
-    },
-    // 分页时修改每页的行数
-    handleSizeChange: function (size) {
-      this.pagesize = size
-      this.getPageStudets()
-    },
-    // 调整当前的页码
-    handleCurrentChange: function (pageNumber) {
-      this.currentpage = pageNumber
-      this.getPageStudets()
     },
     // 实现学生信息查询
     queryStudents: function () {
@@ -444,6 +435,55 @@ export default {
           message: '已取消删除'
         })
       })
+    },
+    // 批量删除
+    deleteStudents () {
+      // 提示用户确认
+      this.$confirm('此操作将永久删除' + this.selectStudents.length + '个学生信息, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        let that = this
+        axios.post(that.baseURL + 'deletebatch', {student: that.selectStudents})
+          .then(res => {
+            if (res.data.code === 1) {
+              that.students = res.data.data
+              that.total = res.data.data.length
+              that.getPageStudets()
+              that.$message({
+                type: 'success',
+                message: '批量删除成功!'
+              })
+            } else {
+              that.$message.error(res.data.msg)
+            }
+          })
+          .catch(err => {
+            console.log(err)
+            that.$message.error('批量删除时获取后端查询结果出现异常！')
+          })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
+      })
+    },
+    // 分页时修改每页的行数
+    handleSizeChange: function (size) {
+      this.pagesize = size
+      this.getPageStudets()
+    },
+    // 调整当前的页码
+    handleCurrentChange: function (pageNumber) {
+      this.currentpage = pageNumber
+      this.getPageStudets()
+    },
+    // 选择复选框触发的操作
+    handleSelectionChange (data) {
+      console.log(data)
+      this.selectStudents = data
     }
   }
 }

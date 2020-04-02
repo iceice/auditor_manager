@@ -106,3 +106,19 @@ def delete_student(request):
         return JsonResponse({'code': 1, 'data': students})
     except Exception as e:
         return JsonResponse({'code': 0, 'msg': "删除学生信息写入数据库失败，具体错误：" + str(e)})
+
+
+def delete_students(request):
+    """
+    批量删除学生信息
+    """
+    data = json.loads(request.body.decode('utf-8'))
+    try:
+        for one in data['student']:
+            obj_student = Student.objects.get(student_id=one['student_id'])
+            obj_student.delete()
+        obj_students = Student.objects.all().values()
+        students = list(obj_students)
+        return JsonResponse({'code': 1, 'data': students})
+    except Exception as e:
+        return JsonResponse({'code': 0, 'msg': "批量删除学生信息写入数据库失败，具体错误：" + str(e)})
