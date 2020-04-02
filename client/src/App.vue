@@ -37,14 +37,14 @@
               <el-row :gutter="10">
                 <el-col :span="10" style="text-align:left">
                   <el-form-item label="请输入">
-                    <el-input placeholder="查询条件" style="width: 360px"></el-input>
+                    <el-input v-model="inputstr" placeholder="查询条件" style="width: 360px"></el-input>
                   </el-form-item>
                 </el-col>
                 <el-col :span="8">
                   <el-button-group>
-                    <el-button type="primary" icon="el-icon-search">查询</el-button>
-                    <el-button type="primary" icon="el-icon-tickets">全部</el-button>
-                    <el-button type="primary" icon="el-icon-circle-plus-outline">添加</el-button>
+                    <el-button type="primary" icon="el-icon-search" @click="queryStudents">查询</el-button>
+                    <el-button type="primary" icon="el-icon-tickets" @click="getAll">全部</el-button>
+                    <el-button type="primary" icon="el-icon-circle-plus-outline" @click="addStudent">添加</el-button>
                   </el-button-group>
                 </el-col>
                 <el-col :span="3" style="text-align:right">
@@ -60,8 +60,8 @@
             <!-- 表格 -->
             <el-table :data="pageStudents" border style="width: 100%" size="mini">
               <el-table-column type="selection"> </el-table-column>
-              <el-table-column type="index" label="序号" width="60" align="center"> </el-table-column>
-              <el-table-column prop="student_id" label="学号" width="80" align="center"> </el-table-column>
+              <el-table-column type="index" label="序号" width="50" align="center"> </el-table-column>
+              <el-table-column prop="student_id" label="学号" width="90" align="center"> </el-table-column>
               <el-table-column prop="name" label="姓名" width="80" align="center"> </el-table-column>
               <el-table-column prop="gender" label="性别" width="60" align="center"> </el-table-column>
               <el-table-column prop="birthday" label="出生日期" width="100" align="center"> </el-table-column>
@@ -69,9 +69,11 @@
               <el-table-column prop="email" label="邮箱" width="220" align="center"> </el-table-column>
               <el-table-column prop="address" label="地址" align="center"> </el-table-column>
               <el-table-column label="操作" width="140" align="center">
-                <el-button type="success" icon="el-icon-check" size="mini" circle></el-button>
-                <el-button type="primary" icon="el-icon-edit" size="mini" circle></el-button>
-                <el-button type="danger" icon="el-icon-delete" size="mini" circle></el-button>
+                <template slot-scope="scope">
+                  <el-button type="success" icon="el-icon-more" size="mini" circle @click="viewStudent(scope.row)"></el-button>
+                  <el-button type="primary" icon="el-icon-edit" size="mini" circle @click="updateStudent(scope.row)"></el-button>
+                  <el-button type="danger" icon="el-icon-delete" size="mini" circle></el-button>
+                </template>
               </el-table-column>
             </el-table>
             <!-- 分页 -->
@@ -86,6 +88,45 @@
                 </el-pagination>
               </el-col>
             </el-row>
+            <!-- 学生明细弹出框 -->
+            <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" :close-on-click-modal="false" width="50%"
+              style="text-align: left" @close="closeDialog">
+              <!-- 表单 -->
+              <el-form v-model="studentForm" :inline="true" size="mini" label-width="110px" label-position="right"
+                style="margin-left:20px">
+                <el-form-item label="学号：">
+                  <el-input :disabled="isEdit||isView" v-model="studentForm.student_id" suffix-icon="el-icon-edit"></el-input>
+                </el-form-item>
+                <el-form-item label="姓名：">
+                  <el-input :disabled="isView" v-model="studentForm.name" suffix-icon="el-icon-edit"></el-input>
+                </el-form-item>
+                <el-form-item label="性别：">
+                  <el-select :disabled="isView" v-model="studentForm.gender" placeholder="请选择性别">
+                    <el-option label="男" value="男"></el-option>
+                    <el-option label="女" value="女"></el-option>
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="出生日期：">
+                  <el-date-picker :disabled="isView" v-model="studentForm.birthday" type="date" placeholder="请选择日期" style="width:93%">
+                  </el-date-picker>
+                </el-form-item>
+                <el-form-item label="手机号码：">
+                  <el-input :disabled="isView" v-model="studentForm.mobile" suffix-icon="el-icon-edit"></el-input>
+                </el-form-item>
+                <el-form-item label="邮箱地址：">
+                  <el-input :disabled="isView" v-model="studentForm.email" suffix-icon="el-icon-edit"></el-input>
+                </el-form-item>
+                <div>
+                  <el-form-item :span="24" label="家庭住址：">
+                    <el-input :disabled="isView" v-model="studentForm.address" suffix-icon="el-icon-edit" style="width:272%"></el-input>
+                  </el-form-item>
+                </div>
+              </el-form>
+              <span slot="footer" class="dialog-footer" v-show="!isView">
+                <el-button type="primary" size="mini">确 定</el-button>
+                <el-button type="info" size="mini" @click="closeDialog">取 消</el-button>
+              </span>
+            </el-dialog>
           </el-main>
           <el-footer style="height: 30px">版权所有：pku-sewm</el-footer>
         </el-container>
@@ -104,9 +145,24 @@ export default {
       students: [], // 所有学生信息
       pageStudents: [], // 当前页的学生信息
       baseURL: 'http://127.0.0.1:8000/api/',
+      inputstr: '',
       total: 100, // 数据的总行数
       currentpage: 1, // 当前所在的页
-      pagesize: 10
+      pagesize: 10,
+      dialogVisible: false,
+      dialogTitle: '',
+      isView: false,
+      isEdit: false,
+      studentForm: {
+        student_id: '',
+        name: '',
+        gender: '',
+        birthday: '',
+        mobile: '',
+        email: '',
+        address: '',
+        image: ''
+      }
     }
   },
   mounted () {
@@ -128,7 +184,7 @@ export default {
             // 获取当前页
             that.getPageStudets()
             that.$message({
-              message: '数据加载成功！',
+              message: '全部数据加载成功！',
               type: 'success'
             })
           } else {
@@ -139,6 +195,11 @@ export default {
           // 请求失败后执行的函数
           console.log(err)
         })
+    },
+    // 全部按钮的回调函数
+    getAll: function () {
+      this.inputstr = ''
+      this.getStudents()
     },
     // 获取当前页的学生信息
     getPageStudets: function () {
@@ -161,6 +222,61 @@ export default {
     handleCurrentChange: function (pageNumber) {
       this.currentpage = pageNumber
       this.getPageStudets()
+    },
+    // 实现学生信息查询
+    queryStudents: function () {
+      let that = this
+      axios.post(that.baseURL + 'query', { inputstr: that.inputstr })
+        .then(function (res) {
+          if (res.data.code === 1) {
+            that.students = res.data.data
+            // 获取返回记录的总行数
+            that.total = res.data.data.length
+            // 获取当前页
+            that.getPageStudets()
+            that.$message({
+              message: '查询成功！',
+              type: 'success'
+            })
+          } else {
+            that.$message.error(res.data.msg)
+          }
+        })
+        .catch(function (err) {
+          console.length(err)
+          that.$message.error('获取后端查询结果出现异常！')
+        })
+    },
+    // 添加学生时打开对话框
+    addStudent: function () {
+      this.dialogTitle = '添加学生明细'
+      this.dialogVisible = true
+    },
+    // 查看学生的明细
+    viewStudent: function (row) {
+      this.dialogTitle = '查看学生明细'
+      this.isView = true
+      this.dialogVisible = true
+      this.studentForm = JSON.parse(JSON.stringify(row))
+    },
+    updateStudent: function (row) {
+      this.dialogTitle = '修改学生明细'
+      this.isEdit = true
+      this.dialogVisible = true
+      this.studentForm = JSON.parse(JSON.stringify(row))
+    },
+    // 关闭弹出框
+    closeDialog: function () {
+      this.dialogVisible = false
+      this.isView = false
+      this.isEdit = false
+      this.studentForm.student_id = ''
+      this.studentForm.name = ''
+      this.studentForm.gender = ''
+      this.studentForm.birthday = ''
+      this.studentForm.mobile = ''
+      this.studentForm.email = ''
+      this.studentForm.address = ''
     }
   }
 }

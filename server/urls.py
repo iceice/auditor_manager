@@ -6,4 +6,8 @@ urlpatterns = [
         r'show$',
         views.get_students,
     ),
+    url(
+        r'query$',
+        views.query_students,
+    ),
 ]
