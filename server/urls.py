@@ -14,4 +14,16 @@ urlpatterns = [
         r'checkID$',
         views.check_studentID,
     ),
+    url(
+        r'add$',
+        views.add_student,
+    ),
+    url(
+        r'update$',
+        views.update_student,
+    ),
+    url(
+        r'delete$',
+        views.delete_student,
+    ),
 ]
