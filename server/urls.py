@@ -30,4 +30,8 @@ urlpatterns = [
         r'deletebatch$',
         views.delete_students,
     ),
+    url(
+        r'upload$',
+        views.upload,
+    ),
 ]

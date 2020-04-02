@@ -1,7 +1,11 @@
 from django.http import JsonResponse
 from django.db.models import Q
+from django.conf import settings
 from .models import Student
 import json
+import uuid
+import hashlib
+import os
 
 
 # Create your views here.
@@ -63,7 +67,8 @@ def add_student(request):
                                birthday=data['birthday'],
                                mobile=data['mobile'],
                                email=data['email'],
-                               address=data['address'])
+                               address=data['address'],
+                               image=data['image'])
         obj_students.save()
         obj_students = Student.objects.all().values()
         students = list(obj_students)
@@ -79,12 +84,18 @@ def update_student(request):
     data = json.loads(request.body.decode('utf-8'))
     try:
         obj_students = Student.objects.get(student_id=data['student_id'])
+        # 判断之前的图片是否需要删除
+        if obj_students.image:
+            file_path = os.path.join(settings.MEDIA_ROOT, obj_students.image)
+            if os.path.exists(file_path):
+                os.remove(file_path)
         obj_students.name = data['name']
         obj_students.gender = data['gender']
         obj_students.birthday = data['birthday']
         obj_students.mobile = data['mobile']
         obj_students.email = data['email']
         obj_students.address = data['address']
+        obj_students.image = data['image']
         obj_students.save()
         obj_students = Student.objects.all().values()
         students = list(obj_students)
@@ -100,6 +111,10 @@ def delete_student(request):
     data = json.loads(request.body.decode('utf-8'))
     try:
         obj_students = Student.objects.get(student_id=data['student_id'])
+        # 删除图片信息
+        file_path = os.path.join(settings.MEDIA_ROOT, obj_students.image)
+        if os.path.exists(file_path):
+            os.remove(file_path)
         obj_students.delete()
         obj_students = Student.objects.all().values()
         students = list(obj_students)
@@ -116,9 +131,51 @@ def delete_students(request):
     try:
         for one in data['student']:
             obj_student = Student.objects.get(student_id=one['student_id'])
+            # 删除图片信息
+            file_path = os.path.join(settings.MEDIA_ROOT, obj_student.image)
+            if os.path.exists(file_path):
+                os.remove(file_path)
             obj_student.delete()
         obj_students = Student.objects.all().values()
         students = list(obj_students)
         return JsonResponse({'code': 1, 'data': students})
     except Exception as e:
-        return JsonResponse({'code': 0, 'msg': "批量删除学生信息写入数据库失败，具体错误：" + str(e)})
+        return JsonResponse({
+            'code': 0,
+            'msg': "批量删除学生信息写入数据库失败，具体错误：" + str(e)
+        })
+
+
+def upload(request):
+    """
+    接收上传的文件
+    """
+    rev_file = request.FILES.get('avatar')
+    if not rev_file:
+        return JsonResponse({'code': 0, 'msg': "图片不存在！"})
+    # 生成唯一的名字
+    new_name = get_random_str()
+    file_path = os.path.join(settings.MEDIA_ROOT,
+                             new_name + os.path.splitext(rev_file.name)[1])
+    try:
+        f = open(file_path, 'wb')
+        # 如果文件比较大，分多次写入
+        for i in rev_file.chunks():
+            f.write(i)
+        f.close()
+        return JsonResponse({
+            'code':
+            1,
+            'name':
+            new_name + os.path.splitext(rev_file.name)[1]
+        })
+    except Exception as e:
+        return JsonResponse({'code': 0, 'msg': "具体错误：" + str(e)})
+
+
+def get_random_str():
+    uuid_val = uuid.uuid4()
+    uuid_str = str(uuid_val).encode('utf-8')
+    md5 = hashlib.md5()
+    md5.update(uuid_str)
+    return md5.hexdigest()

@@ -58,7 +58,8 @@
               </el-row>
             </el-form>
             <!-- 表格 -->
-            <el-table :data="pageStudents" border style="width: 100%" size="mini" @selection-change="handleSelectionChange">>
+            <el-table :data="pageStudents" border style="width: 100%" size="mini"
+              @selection-change="handleSelectionChange">>
               <el-table-column type="selection"> </el-table-column>
               <el-table-column type="index" label="序号" width="50" align="center"> </el-table-column>
               <el-table-column prop="student_id" label="学号" width="90" align="center"> </el-table-column>
@@ -74,7 +75,8 @@
                   </el-button>
                   <el-button type="primary" icon="el-icon-edit" size="mini" circle @click="updateStudent(scope.row)">
                   </el-button>
-                  <el-button type="danger" icon="el-icon-delete" size="mini" circle @click="deleteStudent(scope.row)"></el-button>
+                  <el-button type="danger" icon="el-icon-delete" size="mini" circle @click="deleteStudent(scope.row)">
+                  </el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -96,6 +98,12 @@
               <!-- 表单 -->
               <el-form :model="studentForm" :rules="rules" :inline="true" size="mini" label-width="110px"
                 label-position="right" style="margin-left:20px" ref="studentForm">
+                <!-- 上传头像 -->
+                <el-upload class="avatar-uploader" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                  style="text-align: center; margin: 20px"  :http-request="uploadPicPost" :disabled="isView">
+                  <img v-if="studentForm.image" :src="studentForm.imageUrl" class="avatar">
+                  <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                </el-upload>
                 <el-form-item label="学号：" prop="student_id">
                   <el-input :disabled="isEdit||isView" v-model="studentForm.student_id" suffix-icon="el-icon-edit">
                   </el-input>
@@ -110,8 +118,8 @@
                   </el-select>
                 </el-form-item>
                 <el-form-item label="出生日期：" prop="birthday">
-                  <el-date-picker :disabled="isView" v-model="studentForm.birthday" value-format="yyyy-MM-dd" type="date" placeholder="请选择日期"
-                    style="width:93%">
+                  <el-date-picker :disabled="isView" v-model="studentForm.birthday" value-format="yyyy-MM-dd"
+                    type="date" placeholder="请选择日期" style="width:93%">
                   </el-date-picker>
                 </el-form-item>
                 <el-form-item label="手机号码：" prop="mobile">
@@ -151,7 +159,7 @@ export default {
       if (this.isEdit) {
         callback()
       }
-      axios.post(this.baseURL + 'checkID', { student_id: value })
+      axios.post(this.baseURL + 'api/checkID', { student_id: value })
         .then((res) => {
           if (res.data.code === 1) {
             // 请求成功
@@ -173,7 +181,7 @@ export default {
     return {
       students: [], // 所有学生信息
       pageStudents: [], // 当前页的学生信息
-      baseURL: 'http://127.0.0.1:8000/api/',
+      baseURL: 'http://127.0.0.1:8000/',
       inputstr: '',
       selectStudents: [],
       total: 100, // 数据的总行数
@@ -191,7 +199,8 @@ export default {
         mobile: '',
         email: '',
         address: '',
-        image: ''
+        image: '',
+        imageUrl: ''
       },
       rules: {
         student_id: [
@@ -232,7 +241,7 @@ export default {
     getStudents: function () {
       let that = this
       // 使用Axios
-      axios.get(that.baseURL + 'show')
+      axios.get(that.baseURL + 'api/show')
         .then(function (res) {
           // 请求成功后执行的函数
           if (res.data.code === 1) {
@@ -274,7 +283,7 @@ export default {
     // 实现学生信息查询
     queryStudents: function () {
       let that = this
-      axios.post(that.baseURL + 'query', { inputstr: that.inputstr })
+      axios.post(that.baseURL + 'api/query', { inputstr: that.inputstr })
         .then(function (res) {
           if (res.data.code === 1) {
             that.students = res.data.data
@@ -300,18 +309,28 @@ export default {
       this.dialogTitle = '添加学生明细'
       this.dialogVisible = true
     },
+    // 根据学号获取图片
+    getImageByID (id) {
+      for (const oneStudent of this.students) {
+        if (oneStudent.student_id === id) return oneStudent.image
+      }
+    },
     // 查看学生的明细
     viewStudent: function (row) {
       this.dialogTitle = '查看学生明细'
       this.isView = true
       this.dialogVisible = true
       this.studentForm = JSON.parse(JSON.stringify(row))
+      this.studentForm.image = this.getImageByID(row.student_id)
+      this.studentForm.imageUrl = this.baseURL + 'media/' + this.studentForm.image
     },
     updateStudent: function (row) {
       this.dialogTitle = '修改学生明细'
       this.isEdit = true
       this.dialogVisible = true
       this.studentForm = JSON.parse(JSON.stringify(row))
+      this.studentForm.image = this.getImageByID(row.student_id)
+      this.studentForm.imageUrl = this.baseURL + 'media/' + this.studentForm.image
     },
     // 关闭弹出框
     closeDialog: function (formName) {
@@ -326,6 +345,8 @@ export default {
       this.studentForm.mobile = ''
       this.studentForm.email = ''
       this.studentForm.address = ''
+      this.studentForm.image = ''
+      this.studentForm.imageUrl = ''
     },
     // 提交表单
     submitStudentForm (formName) {
@@ -349,7 +370,7 @@ export default {
     // 提交表单，添加学生到数据库
     submitAddStudent () {
       let that = this
-      axios.post(that.baseURL + 'add', that.studentForm)
+      axios.post(that.baseURL + 'api/add', that.studentForm)
         .then((res) => {
           // 执行成功
           if (res.data.code === 1) {
@@ -377,7 +398,7 @@ export default {
     // 提交表单，修改学生信息
     submitUpdateStudent () {
       let that = this
-      axios.post(that.baseURL + 'update', that.studentForm)
+      axios.post(that.baseURL + 'api/update', that.studentForm)
         .then((res) => {
           // 执行成功
           if (res.data.code === 1) {
@@ -411,7 +432,7 @@ export default {
         type: 'warning'
       }).then(() => {
         let that = this
-        axios.post(that.baseURL + 'delete', {student_id: row.student_id})
+        axios.post(that.baseURL + 'api/delete', { student_id: row.student_id })
           .then(res => {
             if (res.data.code === 1) {
               that.students = res.data.data
@@ -445,7 +466,7 @@ export default {
         type: 'warning'
       }).then(() => {
         let that = this
-        axios.post(that.baseURL + 'deletebatch', {student: that.selectStudents})
+        axios.post(that.baseURL + 'api/deletebatch', { student: that.selectStudents })
           .then(res => {
             if (res.data.code === 1) {
               that.students = res.data.data
@@ -484,6 +505,29 @@ export default {
     handleSelectionChange (data) {
       console.log(data)
       this.selectStudents = data
+    },
+    // 上传头像
+    uploadPicPost (file) {
+      let that = this
+      let fileReq = new FormData()
+      fileReq.append('avatar', file.file)
+      axios({
+        method: 'post',
+        url: that.baseURL + 'api/upload',
+        data: fileReq
+      })
+        .then(res => {
+          if (res.data.code === 1) {
+            that.studentForm.image = res.data.name
+            that.studentForm.imageUrl = that.baseURL + 'media/' + res.data.name
+          } else {
+            that.$message.error(res.data.msg)
+          }
+        })
+        .catch(err => {
+          console.log(err)
+          that.$message.error('上传头像出现异常')
+        })
     }
   }
 }
@@ -526,5 +570,29 @@ body,
   background-color: #e9eef3;
   color: #333;
   text-align: center;
+}
+
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.avatar-uploader .el-upload:hover {
+  border-color: #409eff;
+}
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+.avatar {
+  width: 120px;
+  height: 160px;
+  display: block;
 }
 </style>
