@@ -92,32 +92,32 @@
             <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" :close-on-click-modal="false" width="50%"
               style="text-align: left" @close="closeDialog">
               <!-- 表单 -->
-              <el-form v-model="studentForm" :inline="true" size="mini" label-width="110px" label-position="right"
+              <el-form :model="studentForm" :rules="rules" :inline="true" size="mini" label-width="110px" label-position="right"
                 style="margin-left:20px">
-                <el-form-item label="学号：">
+                <el-form-item label="学号：" prop="student_id">
                   <el-input :disabled="isEdit||isView" v-model="studentForm.student_id" suffix-icon="el-icon-edit"></el-input>
                 </el-form-item>
-                <el-form-item label="姓名：">
+                <el-form-item label="姓名：" prop="name">
                   <el-input :disabled="isView" v-model="studentForm.name" suffix-icon="el-icon-edit"></el-input>
                 </el-form-item>
-                <el-form-item label="性别：">
+                <el-form-item label="性别：" prop="gender">
                   <el-select :disabled="isView" v-model="studentForm.gender" placeholder="请选择性别">
                     <el-option label="男" value="男"></el-option>
                     <el-option label="女" value="女"></el-option>
                   </el-select>
                 </el-form-item>
-                <el-form-item label="出生日期：">
+                <el-form-item label="出生日期：" prop="birthday">
                   <el-date-picker :disabled="isView" v-model="studentForm.birthday" type="date" placeholder="请选择日期" style="width:93%">
                   </el-date-picker>
                 </el-form-item>
-                <el-form-item label="手机号码：">
+                <el-form-item label="手机号码：" prop="mobile">
                   <el-input :disabled="isView" v-model="studentForm.mobile" suffix-icon="el-icon-edit"></el-input>
                 </el-form-item>
-                <el-form-item label="邮箱地址：">
+                <el-form-item label="邮箱地址：" prop="email">
                   <el-input :disabled="isView" v-model="studentForm.email" suffix-icon="el-icon-edit"></el-input>
                 </el-form-item>
                 <div>
-                  <el-form-item :span="24" label="家庭住址：">
+                  <el-form-item :span="24" label="家庭住址：" prop="address">
                     <el-input :disabled="isView" v-model="studentForm.address" suffix-icon="el-icon-edit" style="width:272%"></el-input>
                   </el-form-item>
                 </div>
@@ -141,6 +141,27 @@ import axios from 'axios'
 export default {
   name: 'App',
   data: function () {
+    // 校验学号是否存在
+    const checkStudentId = (rule, value, callback) => {
+      axios.post(this.baseURL + 'checkID', { student_id: value })
+        .then((res) => {
+          if (res.data.code === 1) {
+            // 请求成功
+            if (res.data.existed) {
+              callback(new Error('学号已存在'))
+            } else {
+              callback()
+            }
+          } else {
+            // 请求失败
+            callback(new Error('后端出现异常'))
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+    }
+
     return {
       students: [], // 所有学生信息
       pageStudents: [], // 当前页的学生信息
@@ -162,6 +183,34 @@ export default {
         email: '',
         address: '',
         image: ''
+      },
+      rules: {
+        student_id: [
+          {required: true, message: '学号不能为空', triggler: 'blur'},
+          {pattern: /^[1][8][0][1][2][1][3]\d{3}$/, message: '学号必须是1801213xxx', triggler: 'blur'},
+          {validator: checkStudentId, triggler: 'blur'}
+        ],
+        name: [
+          {required: true, message: '姓名不能为空', triggler: 'blur'},
+          {pattern: /^[\u4e00-\u9fa5]{2,5}$/, message: '姓名必须是2-5个汉字', triggler: 'blur'}
+        ],
+        gender: [
+          {required: true, message: '性别不能为空', triggler: 'change'}
+        ],
+        birthday: [
+          {type: 'date', required: true, message: '出生日期不能为空', triggler: 'change'}
+        ],
+        mobile: [
+          {required: true, message: '手机号码不能为空', triggler: 'blur'},
+          {pattern: /^[1][35789]\d{9}$/, message: '手机号码需要符合规范', triggler: 'blur'}
+        ],
+        email: [
+          {required: true, message: '邮箱地址不能为空', triggler: 'blur'},
+          {pattern: /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/, message: '邮箱地址需要符合规范', triggler: 'blur'}
+        ],
+        address: [
+          {required: true, message: '家庭地址不能为空', triggler: 'blur'}
+        ]
       }
     }
   },

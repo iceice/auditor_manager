@@ -10,4 +10,8 @@ urlpatterns = [
         r'query$',
         views.query_students,
     ),
+    url(
+        r'checkID$',
+        views.check_studentID,
+    ),
 ]

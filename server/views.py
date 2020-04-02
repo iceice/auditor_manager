@@ -32,3 +32,17 @@ def query_students(request):
         return JsonResponse({'code': 1, 'data': students})
     except Exception as e:
         return JsonResponse({'code': 0, 'msg': "查询学生信息出现异常，具体错误：" + str(e)})
+
+
+def check_studentID(request):
+    """检查学生ID是否存在"""
+    data = json.loads(request.body.decode('utf-8'))
+    query_str = data['student_id']
+    try:
+        obj_students = Student.objects.filter(student_id=query_str)
+        if (obj_students.count() == 0):
+            return JsonResponse({'code': 1, 'existed': False})
+        else:
+            return JsonResponse({'code': 1, 'existed': True})
+    except Exception as e:
+        return JsonResponse({'code': 0, 'msg': "校验学号失败，具体错误：" + str(e)})
