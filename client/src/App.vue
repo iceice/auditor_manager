@@ -102,7 +102,7 @@
                 <el-upload class="avatar-uploader" :show-file-list="false" :before-upload="beforeAvatarUpload"
                   style="text-align: center; margin: 20px"  :http-request="uploadPicPost" :disabled="isView">
                   <img v-if="studentForm.image" :src="studentForm.imageUrl" class="avatar">
-                  <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                  <i v-else class="el-icon-plus avatar-uploader-icon" style="line-height: 178px;"></i>
                 </el-upload>
                 <el-form-item label="学号：" prop="student_id">
                   <el-input :disabled="isEdit||isView" v-model="studentForm.student_id" suffix-icon="el-icon-edit">
@@ -181,7 +181,7 @@ export default {
     return {
       students: [], // 所有学生信息
       pageStudents: [], // 当前页的学生信息
-      baseURL: 'http://127.0.0.1:8000/',
+      baseURL: 'http://127.0.0.1:2020/',
       inputstr: '',
       selectStudents: [],
       total: 100, // 数据的总行数
